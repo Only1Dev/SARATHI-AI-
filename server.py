@@ -363,8 +363,8 @@ def create_checkout_session():
             'quantity': 1,
         }],
         mode='payment',
-        success_url=f"http://localhost:5000/api/stripe/success?session_id={{CHECKOUT_SESSION_ID}}&phone={phone}&amount={amount}",
-        cancel_url="http://localhost:5000/dashboard.html",
+        success_url=f"https://sarathi-ai-963u.onrender.com//api/stripe/success?session_id={{CHECKOUT_SESSION_ID}}&phone={phone}&amount={amount}",
+        cancel_url="https://sarathi-ai-963u.onrender.com//dashboard.html",
     )
     return jsonify({"url": session.url})
 
