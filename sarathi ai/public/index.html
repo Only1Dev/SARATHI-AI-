@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sarathi AI - Escrow Network</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+    :root {
+      --brand-accent: #10b981;
+      --bg-dark: #0f172a;
+      --card-bg: linear-gradient(145deg, #1e293b, #0f172a);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg-dark);
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      margin: 0; min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    /* Background Orbs */
+    .bg-orb-1 { position: absolute; top: -20%; left: -10%; width: 60vw; height: 60vw; background: radial-gradient(circle, rgba(16,185,129,0.15) 0%, transparent 60%); filter: blur(80px); z-index: -1; animation: floatOrb 15s infinite ease-in-out alternate; }
+    .bg-orb-2 { position: absolute; bottom: -20%; right: -10%; width: 50vw; height: 50vw; background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 60%); filter: blur(80px); z-index: -1; animation: floatOrb 12s infinite ease-in-out alternate-reverse; }
+
+    .navbar {
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 1.2rem 5%;
+      background: rgba(15, 23, 42, 0.7); backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.5rem; font-weight: 800; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; cursor: pointer; text-decoration: none; color: white;}
+    .logo-icon { background: var(--brand-accent); width: 36px; height: 36px; border-radius: 10px; display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 0 20px rgba(16,185,129,0.5); }
+    
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: #94a3b8; text-decoration: none; font-weight: 500; font-size:1rem; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    
+    .modern-card {
+      background: var(--card-bg); border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px; padding: 2.5rem;
+      box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.6);
+      position: relative; overflow: hidden;
+    }
+    .modern-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px; background: linear-gradient(90deg, transparent, var(--brand-accent), transparent); opacity: 0.3; }
+    
+    .btn-glow {
+      background: linear-gradient(135deg, var(--brand-accent), #059669);
+      color: white; border: none; padding: 1rem 1.5rem; border-radius: 12px;
+      font-weight: 600; cursor: pointer; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+      font-family: 'Inter', sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-glow:hover { transform: translateY(-3px); box-shadow: 0 10px 30px rgba(16, 185, 129, 0.6); }
+    
+    .btn-outline {
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); color: white;
+      padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.3s;
+      backdrop-filter: blur(10px);
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.3); transform: translateY(-2px); }
+
+    .modern-input { width: 100%; padding: 1.2rem; border-radius: 14px; border: 1px solid #334155; background: rgba(15, 23, 42, 0.8); color: white; font-size: 1.1rem; text-align: center; margin-bottom: 1.5rem; transition: all 0.2s; }
+    .modern-input:focus { outline: none; border-color: var(--brand-accent); box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); background: rgba(15, 23, 42, 1); }
+    
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.8); backdrop-filter: blur(15px); z-index: 1000;
+      justify-content: center; align-items: center;
+      opacity: 0; transition: opacity 0.3s ease;
+    }
+    .modal-overlay.active { display: flex; opacity: 1; }
+    
+    /* Premium Landing Styles */
+    .text-gradient {
+      background: linear-gradient(to right, #10b981, #3b82f6);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes floatOrb {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 50px) scale(1.1); }
+    }
+    @keyframes floatItem1 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
+    @keyframes floatItem2 { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(15px); } }
+
+    .floating-badge {
+      position: absolute;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255,255,255,0.1);
+      padding: 14px 24px;
+      border-radius: 100px;
+      backdrop-filter: blur(12px);
+      font-size: 0.95rem; font-weight: 600; color: white;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+      display: flex; align-items: center; gap: 12px;
+      z-index: -1;
+    }
+    
+    /* Adjusted positions to not block text */
+    .fb-1 { top: 15%; left: 5%; animation: floatItem1 7s infinite ease-in-out; border-color: rgba(59, 130, 246, 0.3); }
+    .fb-2 { bottom: 25%; right: 5%; animation: floatItem2 6s infinite ease-in-out; border-color: rgba(16, 185, 129, 0.4); }
+    .fb-3 { top: 15%; right: 5%; animation: floatItem1 8s infinite ease-in-out 1s; border-color: rgba(245, 158, 11, 0.3); }
+    
+    @media (max-width: 900px) {
+      .floating-badge { display: none; }
+      .hero-title { font-size: 3.5rem !important; }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-orb-1"></div>
+  <div class="bg-orb-2"></div>
+
+  <nav class="navbar">
+    <a href="/" class="logo">
+      <div class="logo-icon">⚡</div>
+      Sarathi AI
+    </a>
+    <div class="nav-links">
+      <a href="/worker.html">Worker Portal</a>
+      <button class="btn-glow" style="padding: 0.7rem 1.5rem; border-radius: 100px;" onclick="openLoginModal()">Login / Sign Up</button>
+    </div>
+  </nav>
+  
+  <main style="max-width: 900px; margin: 7rem auto 4rem auto; text-align: center; padding: 0 1rem; position: relative;">
+    
+    <!-- Floating Graphics -->
+    <div class="floating-badge fb-1"><i data-lucide="message-square" style="color:#3b82f6;"></i> Need a Python script...</div>
+    <div class="floating-badge fb-2"><i data-lucide="shield-check" style="color:#10b981;"></i> ₹500 Escrow Locked</div>
+    <div class="floating-badge fb-3"><i data-lucide="zap" style="color:#f59e0b;"></i> AI Assigned Team</div>
+
+    <h1 class="hero-title" style="font-size: 5.5rem; margin-bottom: 1.5rem; line-height: 1.1; letter-spacing: -2px; font-weight: 800; animation: fadeUp 0.8s ease forwards;">
+      Text a Job.<br><span class="text-gradient">We Handle the Rest.</span>
+    </h1>
+    <p style="font-size: 1.3rem; color: #94a3b8; margin: 0 auto 3.5rem auto; line-height: 1.7; max-width: 650px; font-weight: 400; animation: fadeUp 1s ease forwards; opacity: 0; animation-delay: 0.2s;">
+      Tell Sarathi what you need. AI assembles the right team, tracks progress, and ensures secure payment on completion.
+    </p>
+    
+    <div style="display: flex; gap: 1.5rem; justify-content: center; animation: fadeUp 1s ease forwards; opacity: 0; animation-delay: 0.4s;">
+      <button class="btn-glow" style="padding: 1.2rem 3rem; font-size: 1.15rem; border-radius: 100px;" onclick="openLoginModal()">
+        Open Escrow Wallet <i data-lucide="arrow-right" style="width:20px;"></i>
+      </button>
+      <a href="https://t.me/SarathiAI_SIH_bot" target="_blank" class="btn-outline" style="text-decoration:none; padding:1.2rem 2.5rem; font-size:1.15rem; border-radius:100px; display:flex; align-items:center; gap:10px;">
+        <i data-lucide="send" style="width: 20px;"></i> Message Telegram Bot
+      </a>
+    </div>
+  </main>
+
+  <div id="login-modal" class="modal-overlay">
+    <div class="modern-card" style="width: 90%; max-width: 440px; text-align: center; border-radius: 30px;">
+      <button onclick="closeLoginModal()" style="position:absolute; top:1.5rem; right:1.5rem; background:rgba(255,255,255,0.05); border:none; color:#94a3b8; width:36px; height:36px; border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:all 0.2s;"><i data-lucide="x" style="width:18px;"></i></button>
+      
+      <div style="width:56px; height:56px; background:linear-gradient(135deg, var(--brand-accent), #059669); border-radius:16px; display:flex; align-items:center; justify-content:center; margin:0 auto 1.5rem; box-shadow:0 10px 25px rgba(16,185,129,0.4);"><i data-lucide="shield-check" style="color:white; width:32px; height:32px;"></i></div>
+      
+      <h3 style="margin-bottom:0.5rem; font-size:1.8rem; font-weight:700;">Secure Login</h3>
+      <p style="color:#94a3b8; margin-bottom:2.5rem; font-size:1rem;">Enter your phone number to access your Escrow Wallet.</p>
+      
+      <div id="step-phone">
+        <input type="tel" class="modern-input" id="phone-input" placeholder="+91 9999999999">
+        <div id="recaptcha-container" style="margin-bottom: 1.5rem; display: flex; justify-content: center; min-height: 78px;"></div>
+        <button class="btn-glow" id="send-otp-btn" style="width:100%; border-radius: 14px;" onclick="sendOTP()">Send Secure OTP</button>
+      </div>
+
+      <div id="step-otp" style="display: none;">
+        <input type="text" class="modern-input" id="otp-input" placeholder="123456" maxlength="6">
+        <button class="btn-glow" id="verify-otp-btn" style="width:100%; border-radius: 14px;" onclick="verifyOTP()">Verify & Access Wallet</button>
+        <p style="margin-top: 1.5rem; color: #94a3b8; font-size: 0.95rem; cursor: pointer; transition:color 0.2s;" onclick="resetLogin()">← Back to phone number</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    lucide.createIcons();
+    const firebaseConfig = { apiKey: "AIzaSyA2lrC0hSXSh8QdP9qVvQa0Mg7nCy_HA-8", authDomain: "sarathi-ai-33e65.firebaseapp.com", projectId: "sarathi-ai-33e65" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    let confirmationResult = null;
+    let recaptchaRendered = false;
+    let isDevBypass = false;
+    let devBypassPhone = "";
+
+    function openLoginModal() { 
+        document.getElementById('login-modal').classList.add('active'); 
+        
+        // Render Recaptcha ONLY when modal opens to prevent iframe size calculation errors
+        if(!recaptchaRendered) {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'});
+            window.recaptchaVerifier.render().then(() => { recaptchaRendered = true; });
+        }
+    }
+    
+    function closeLoginModal() { document.getElementById('login-modal').classList.remove('active'); resetLogin(); }
+    
+    function resetLogin() { 
+        document.getElementById('step-phone').style.display = 'block'; 
+        document.getElementById('step-otp').style.display = 'none'; 
+        document.getElementById('otp-input').value = ''; 
+        isDevBypass = false;
+    }
+
+    async function sendOTP() {
+      let phoneNumber = document.getElementById('phone-input').value.replace(/\s+/g, '').trim(); 
+      const btn = document.getElementById('send-otp-btn');
+      
+      // Auto-add country code for 10-digit Indian numbers
+      if (phoneNumber.length === 10 && !phoneNumber.startsWith('+')) {
+          phoneNumber = '+91' + phoneNumber;
+      }
+      if(!phoneNumber.startsWith('+')) return alert("Please include country code, e.g. +91");
+      
+      btn.innerText = "Sending..."; btn.disabled = true;
+      try {
+        confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier);
+        document.getElementById('step-phone').style.display = 'none';
+        document.getElementById('step-otp').style.display = 'block';
+      } catch (error) { 
+        console.warn("Firebase Error:", error);
+        if (error.message.includes("BILLING_NOT_ENABLED") || error.code.includes("billing")) {
+            alert("Firebase Billing Error intercepted! Entering Dev Mode.\n\nAny OTP (e.g. 123456) will work for this number.");
+            isDevBypass = true;
+            devBypassPhone = phoneNumber;
+            document.getElementById('step-phone').style.display = 'none';
+            document.getElementById('step-otp').style.display = 'block';
+        } else {
+            alert("Firebase Error: " + error.message); 
+            // Important: If it fails normally, clear and re-render recaptcha
+            document.getElementById('recaptcha-container').innerHTML = '';
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'});
+            window.recaptchaVerifier.render();
+        }
+      }
+      btn.innerText = "Send Secure OTP"; btn.disabled = false;
+    }
+
+    async function verifyOTP() {
+      const otp = document.getElementById('otp-input').value.trim();
+      const btn = document.getElementById('verify-otp-btn');
+      btn.innerText = "Verifying..."; btn.disabled = true;
+      try {
+        if (isDevBypass) {
+            await syncUserAndRedirect(devBypassPhone);
+            return;
+        }
+        const result = await confirmationResult.confirm(otp);
+        await syncUserAndRedirect(result.user.phoneNumber);
+      } catch (error) { 
+        alert("Invalid OTP"); 
+        btn.innerText = "Verify & Access Wallet"; 
+        btn.disabled = false; 
+      }
+    }
+
+    async function syncUserAndRedirect(phoneNumber) {
+      try {
+        const res = await fetch('/api/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ phone_number: phoneNumber }) });
+        const data = await res.json();
+        if (data.status === 'success') {
+          localStorage.setItem('user_id', data.user.id);
+          localStorage.setItem('phone_number', data.user.phone_number);
+          window.location.href = data.is_admin ? '/admin.html' : '/dashboard.html';
+        }
+      } catch (err) { console.error(err); }
+    }
+  </script>
+</body>
+</html>
