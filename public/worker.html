@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sarathi AI - Worker Portal</title>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    :root {
+      --brand-accent: #a855f7;
+      --bg-dark: #0f172a;
+      --card-bg: linear-gradient(145deg, #1e293b, #0f172a);
+    }
+    * { box-sizing: border-box; }
+    body {
+      background: var(--bg-dark);
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+      margin: 0; min-height: 100vh;
+    }
+    .navbar {
+      display: flex; justify-content: space-between; align-items: center; 
+      padding: 1rem 5%;
+      background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .logo { font-size: 1.4rem; font-weight: 700; display: flex; align-items: center; gap: 12px; letter-spacing: -0.5px; }
+    .logo-icon { background: var(--brand-accent); width: 34px; height: 34px; border-radius: 10px; display:flex; align-items:center; justify-content:center; color:white; box-shadow: 0 0 15px rgba(16,185,129,0.4); }
+    
+    .nav-links { display: flex; gap: 2rem; align-items: center; }
+    .nav-links a { color: #94a3b8; text-decoration: none; font-weight: 500; font-size:1rem; transition: color 0.2s; }
+    .nav-links a:hover { color: white; }
+    
+    .modern-card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 24px;
+      padding: 2.5rem;
+      box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.5);
+      position: relative;
+      overflow: hidden;
+    }
+    .modern-card::before {
+      content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--brand-accent), transparent);
+      opacity: 0.3;
+    }
+    
+    .btn-glow {
+      background: linear-gradient(135deg, var(--brand-accent), #059669);
+      color: white; border: none; padding: 1rem 1.5rem; border-radius: 12px;
+      font-weight: 600; cursor: pointer; transition: all 0.2s;
+      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+      font-family: 'Inter', sans-serif;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    }
+    .btn-glow:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5); }
+    
+    .btn-outline {
+      background: transparent; border: 1px solid rgba(255,255,255,0.2); color: white;
+      padding: 0.6rem 1.2rem; border-radius: 8px; font-weight: 500; cursor: pointer; transition: all 0.2s;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,0.05); border-color: white; }
+
+    .modern-input { width: 100%; padding: 1rem; border-radius: 12px; border: 1px solid #334155; background: rgba(15, 23, 42, 0.6); color: white; font-size: 1.1rem; text-align: center; margin-bottom: 1.5rem; }
+    .modern-input:focus { outline: none; border-color: var(--brand-accent); box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+    
+    .list-item {
+      background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.03);
+      padding: 1.5rem; border-radius: 16px; margin-bottom: 1rem;
+      transition: all 0.3s ease;
+    }
+    .list-item:hover { border-color: rgba(16, 185, 129, 0.3); background: rgba(16, 185, 129, 0.03); transform: translateX(5px); }
+    
+    .badge { padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+    .badge-pending { background: rgba(245, 158, 11, 0.1); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-success { background: rgba(16, 185, 129, 0.1); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-primary { background: rgba(59, 130, 246, 0.1); color: #3b82f6; border: 1px solid rgba(59, 130, 246, 0.3); }
+
+    /* Fix for index modal */
+    .modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.75); backdrop-filter: blur(10px); z-index: 1000;
+      justify-content: center; align-items: center;
+    }
+    .modal-overlay.active { display: flex; }
+  </style>
+
+</head>
+<body>
+  
+  <nav class="navbar">
+    <a href="/" style="text-decoration:none; color:inherit;" class="logo">
+      <div class="logo-icon">⚡</div>
+      Worker Portal
+    </a>
+    <div class="nav-links">
+      <button class="btn-outline" onclick="enableAudio()" id="sound-btn" style="display:none; border-color:var(--brand-accent); color:var(--brand-accent);">🔊 Enable Sound</button>
+      <button class="btn-outline" onclick="localStorage.removeItem('worker_phone'); if(window.feedInterval) clearInterval(window.feedInterval); window.location.reload();" id="logout-btn" style="display:none;">Sign Out</button>
+    </div>
+  </nav>
+
+  
+  <main style="max-width: 800px; margin: 3rem auto; padding: 0 2rem;">
+    <!-- Auth Box -->
+    <div id="auth-box" class="modern-card" style="max-width:420px; margin: 0 auto; text-align:center;">
+      <h3 style="margin-bottom: 2rem; font-size: 1.6rem;">Worker Login</h3>
+      <div id="step-phone">
+        <input type="tel" class="modern-input" id="phone-input" placeholder="+91 9999999999">
+        <div id="recaptcha-container" style="margin-bottom:1.5rem; display:flex; justify-content:center;"></div>
+        <button class="btn-glow" id="send-otp-btn" style="width:100%;" onclick="sendOTP()">Send OTP</button>
+      </div>
+      <div id="step-otp" style="display:none;">
+        <input type="text" class="modern-input" id="otp-input" placeholder="123456" maxlength="6">
+        <button class="btn-glow" id="verify-otp-btn" style="width:100%;" onclick="verifyOTP()">Verify</button>
+      </div>
+      <div id="step-register" style="display:none;">
+        <h4 style="margin-bottom: 1.5rem;">Complete Profile</h4>
+        <input type="text" class="modern-input" id="reg-name" placeholder="Full Name">
+        <input type="text" class="modern-input" id="reg-city" placeholder="City">
+        <input type="text" class="modern-input" id="reg-upi" placeholder="UPI ID (e.g. shivam@upi)">
+        <button class="btn-glow" style="width:100%;" onclick="completeRegistration()">Register</button>
+      </div>
+    </div>
+
+    <!-- Dashboard Box -->
+    <div id="dashboard-box" style="display:none;">
+      <div class="modern-card" style="margin-bottom: 2rem; display:flex; justify-content:space-between; align-items:center; padding: 2rem;">
+        <div>
+          <h3 style="margin-bottom:0.5rem; font-size: 1.8rem;">Welcome, <span id="worker-name"></span></h3>
+          <p style="color:#94a3b8; margin:0;">Status: <strong id="worker-status" style="color:white;"></strong></p>
+        </div>
+        <div style="text-align:right;">
+          <p style="font-size:0.85rem; color:#94a3b8; margin:0 0 0.5rem 0; text-transform:uppercase;">Total Earnings</p>
+          <p style="font-size:2.5rem; font-weight:700; color:var(--brand-accent); margin:0;">₹<span id="worker-earnings">0</span></p>
+        </div>
+      </div>
+      
+      <div id="pending-notice" style="display:none; background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.3); color:#f59e0b; padding:1.5rem; border-radius:12px; margin-bottom:2rem; font-weight:500;">
+        Your account is pending admin approval. You cannot see tasks yet.
+      </div>
+
+      <div id="task-feed-container" style="display:none;" class="modern-card">
+        <h3 style="margin-bottom:1.5rem;">Available Tasks</h3>
+        <div id="task-feed">Loading...</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    lucide.createIcons();
+    const firebaseConfig = { apiKey: "AIzaSyA2lrC0hSXSh8QdP9qVvQa0Mg7nCy_HA-8", authDomain: "sarathi-ai-33e65.firebaseapp.com", projectId: "sarathi-ai-33e65" };
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    let confirmationResult = null, verifiedPhone = "";
+    let isDevBypass = false;
+    let devBypassPhone = "";
+
+    let knownTaskIds = new Set();
+    let isInitialFeedLoad = true;
+    let soundEnabled = false;
+    let currentFeedHash = "";
+
+    function enableAudio() {
+        soundEnabled = true;
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.volume = 0; // Play silently to unlock context
+        audio.play().then(() => {
+            document.getElementById('sound-btn').style.display = 'none';
+        }).catch(e => console.log(e));
+    }
+
+    function playNotificationSound() {
+        if (!soundEnabled) return; // Prevent errors if not unlocked
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play().catch(e => {
+            console.log('Audio play failed, showing unlock button:', e);
+            document.getElementById('sound-btn').style.display = 'block';
+        });
+    }
+
+    window.onload = () => {
+      const storedPhone = localStorage.getItem("worker_phone");
+      if(storedPhone) { 
+        verifiedPhone = storedPhone; 
+        document.getElementById("auth-box").style.display = "none"; 
+        document.getElementById("logout-btn").style.display = "block"; 
+        document.getElementById("sound-btn").style.display = "block"; // Show on auto-login
+        loginWorker(storedPhone); 
+      }
+      else { window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'}); window.recaptchaVerifier.render(); }
+    };
+
+    async function sendOTP() {
+      let phoneNumber = document.getElementById('phone-input').value.replace(/\s+/g, '').trim();
+      const btn = document.getElementById('send-otp-btn');
+      
+      // Auto-add country code for 10-digit Indian numbers
+      if (phoneNumber.length === 10 && !phoneNumber.startsWith('+')) {
+          phoneNumber = '+91' + phoneNumber;
+      }
+      if(!phoneNumber.startsWith('+')) return alert("Please include country code, e.g. +91");
+      
+      btn.innerText = "Sending..."; btn.disabled = true;
+      verifiedPhone = phoneNumber;
+      
+      try { 
+          confirmationResult = await auth.signInWithPhoneNumber(phoneNumber, window.recaptchaVerifier); 
+          document.getElementById('step-phone').style.display = 'none'; 
+          document.getElementById('step-otp').style.display = 'block'; 
+      } catch (error) { 
+          console.warn("Firebase Error:", error);
+          if (error.message.includes("BILLING_NOT_ENABLED") || error.code.includes("billing")) {
+              alert("Firebase Billing Error intercepted! Entering Dev Mode.\n\nAny OTP (e.g. 123456) will work for this number.");
+              isDevBypass = true;
+              devBypassPhone = phoneNumber;
+              document.getElementById('step-phone').style.display = 'none';
+              document.getElementById('step-otp').style.display = 'block';
+          } else {
+              alert("Firebase Error: " + error.message); 
+              document.getElementById('recaptcha-container').innerHTML = '';
+              window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {'size': 'normal'});
+              window.recaptchaVerifier.render();
+          }
+      }
+      btn.innerText = "Send OTP"; btn.disabled = false;
+    }
+
+    async function verifyOTP() { 
+        const btn = document.getElementById('verify-otp-btn');
+        btn.innerText = "Verifying..."; btn.disabled = true;
+        try { 
+            if (isDevBypass) {
+                enableAudio();
+                loginWorker(devBypassPhone);
+                return;
+            }
+            await confirmationResult.confirm(document.getElementById('otp-input').value.trim()); 
+            enableAudio(); // Unlock with user gesture
+            loginWorker(verifiedPhone); 
+        } catch (e) { 
+            alert("Invalid OTP"); 
+            btn.innerText = "Verify"; btn.disabled = false;
+        } 
+    }
+
+    async function loginWorker(phone) {
+      const res = await fetch('/api/worker/auth', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({phone_number: phone}) });
+      const data = await res.json();
+      if(data.status === 'needs_registration') { document.getElementById('step-otp').style.display = 'none'; document.getElementById('step-phone').style.display = 'none'; document.getElementById('step-register').style.display = 'block'; }
+      else if (data.status === 'success') {
+        localStorage.setItem("worker_phone", phone); localStorage.setItem("worker_id", data.worker.id);
+        document.getElementById("auth-box").style.display = "none"; document.getElementById("dashboard-box").style.display = "block"; document.getElementById("logout-btn").style.display = "block";
+        document.getElementById("worker-name").innerText = data.worker.name; document.getElementById("worker-status").innerText = data.worker.status; document.getElementById("worker-earnings").innerText = data.worker.balance_inr || "0";
+        if(data.worker.status === 'PENDING') document.getElementById("pending-notice").style.display = "block";
+        else if (data.worker.status === 'APPROVED') { 
+          document.getElementById("task-feed-container").style.display = "block"; 
+          loadFeed(); 
+          if (!window.feedInterval) window.feedInterval = setInterval(loadFeed, 5000);
+        }
+      }
+    }
+
+    async function completeRegistration() {
+      await fetch('/api/worker/auth', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({phone_number: verifiedPhone, name: document.getElementById('reg-name').value, city: document.getElementById('reg-city').value, upi_id: document.getElementById('reg-upi').value}) });
+      loginWorker(verifiedPhone);
+    }
+
+    async function loadFeed() {
+      const data = await (await fetch('/api/worker/feed')).json();
+      const feed = document.getElementById('task-feed');
+      
+      if(!data.tasks || data.tasks.length === 0) {
+        feed.innerHTML = "<p style='color:#64748b;'>No tasks available.</p>";
+        currentFeedHash = "";
+        return;
+      }
+      
+      const newHash = JSON.stringify(data.tasks.map(t => t.id + t.status + t.worker_id));
+      
+      if (!isInitialFeedLoad) {
+          const currentNewTasks = data.tasks.filter(t => !knownTaskIds.has(t.id));
+          if (currentNewTasks.length > 0) {
+              playNotificationSound();
+          }
+      }
+      
+      data.tasks.forEach(t => knownTaskIds.add(t.id));
+      isInitialFeedLoad = false;
+      
+      if (currentFeedHash === newHash) return; // Prevent DOM wipe
+      currentFeedHash = newHash;
+      
+      feed.innerHTML = data.tasks.map(t => {
+        let content = `<div class="list-item">
+          <h4 style="margin:0 0 0.5rem 0; font-size:1.1rem; color:white;">${t.query}</h4>
+          <div style="font-size:0.9rem; color:#94a3b8; margin-bottom:1rem;">Reward: ₹${t.quote_inr} | Status: ${t.status}</div>`;
+          
+        if (t.status === 'ESCROW_LOCKED') {
+          content += `<div style="display:flex; gap:10px;">
+    <button class="btn-glow" id="btn-claim-${t.id}" style="padding:0.6rem; width:100%; font-size:0.9rem;" onclick="claimTask('${t.id}')">Claim Task</button>
+    <button class="btn-outline" id="btn-decline-${t.id}" style="padding:0.6rem; width:100%; font-size:0.9rem; border-color: rgba(244,63,94,0.5); color: #f43f5e;" onclick="declineTask('${t.id}')">Decline (Low Budget)</button>
+</div>`;
+        } 
+        else if (t.status === 'CLAIMED' && t.worker_id === localStorage.getItem("worker_id")) {
+          content += `
+            <!-- Chat / Ask Question -->
+            <div style="background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 12px; margin-bottom: 1rem; border: 1px solid rgba(255,255,255,0.05);">
+                <p style="margin: 0 0 0.8rem 0; font-size: 0.85rem; color: #cbd5e1;">Ask the user a question or send a photo directly on Telegram:</p>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <div style="display: flex; gap: 10px;">
+                        <input type="text" id="ask-${t.id}" class="modern-input" style="margin-bottom:0; padding: 0.7rem; text-align:left; font-size:0.95rem;" placeholder="Type your message...">
+                        <button class="btn-outline" style="white-space:nowrap; padding: 0.7rem 1rem;" onclick="askQuestion('${t.id}')">Send</button>
+                    </div>
+                    <input type="file" id="ask-img-${t.id}" accept="image/*" style="color: #cbd5e1; font-size: 0.85rem; width:100%;">
+                </div>
+            </div>
+
+            <!-- Submit Proof -->
+            <div style="background: rgba(16,185,129,0.05); padding: 1rem; border-radius: 12px; border: 1px solid rgba(16,185,129,0.2);">
+                <p style="margin: 0 0 0.8rem 0; font-size: 0.9rem; color: #10b981; font-weight: 600;">Submit Deliverable</p>
+                <textarea id="proof-text-${t.id}" class="modern-input" style="text-align:left; min-height: 80px; padding: 0.8rem; font-size:0.95rem;" placeholder="Describe what you completed..."></textarea>
+                
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="font-size: 0.85rem; color: #94a3b8; display:block; margin-bottom:0.5rem;">Attach Proof Image (Required for AI Verification):</label>
+                    <input type="file" id="proof-img-${t.id}" accept="image/*" style="color: #cbd5e1; font-size: 0.9rem; width:100%;">
+                </div>
+                
+                <button class="btn-glow" id="btn-submit-${t.id}" style="width:100%; padding:0.8rem; font-size: 0.95rem;" onclick="submitProof('${t.id}')">Submit for Review</button>
+            </div>
+          `;
+        }
+        
+        content += `</div>`;
+        return content;
+      }).join('');
+      
+      lucide.createIcons();
+    }
+
+    async function claimTask(id) { 
+      const btn = document.getElementById(`btn-claim-${id}`);
+      btn.innerText = "Claiming..."; btn.disabled = true;
+      document.getElementById(`btn-decline-${id}`).style.display = "none";
+      await fetch('/api/worker/claim', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({task_id: id, worker_id: localStorage.getItem("worker_id")}) }); 
+      loadFeed(); 
+    }
+    
+    async function declineTask(id) {
+      if(!confirm("Are you sure you want to decline this task? The user will be notified that the budget was too low.")) return;
+      const btn = document.getElementById(`btn-decline-${id}`);
+      btn.innerText = "Declining..."; btn.disabled = true;
+      document.getElementById(`btn-claim-${id}`).style.display = "none";
+      await fetch('/api/worker/decline', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({task_id: id}) });
+      loadFeed();
+    }
+    
+    async function askQuestion(id) {
+        const q = document.getElementById(`ask-${id}`).value;
+        const fileInput = document.getElementById(`ask-img-${id}`);
+        
+        if(!q && fileInput.files.length === 0) return alert("Please type a message or attach an image.");
+        const btn = event.currentTarget;
+        const ogText = btn.innerText;
+        btn.innerText = "Sending..."; btn.disabled = true;
+        
+        let base64Image = null;
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            base64Image = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result.split(',')[1]);
+                reader.readAsDataURL(file);
+            });
+        }
+        
+        await fetch('/api/worker/ask', {
+            method: 'POST', headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({task_id: id, question: q, image_base64: base64Image})
+        });
+        alert("Message successfully sent to user's Telegram!");
+        document.getElementById(`ask-${id}`).value = '';
+        if(fileInput) fileInput.value = '';
+        btn.innerText = ogText; btn.disabled = false;
+    }
+
+    async function submitProof(id) { 
+      const txt = document.getElementById(`proof-text-${id}`).value;
+      const fileInput = document.getElementById(`proof-img-${id}`);
+      
+      if(!txt && fileInput.files.length === 0) return alert("Please provide text or an image proof.");
+      
+      const btn = document.getElementById(`btn-submit-${id}`);
+      btn.innerText = "Uploading & Analyzing..."; btn.disabled = true;
+      
+      let base64Image = null;
+      let mimeType = null;
+      
+      if (fileInput.files.length > 0) {
+          const file = fileInput.files[0];
+          mimeType = file.type;
+          base64Image = await new Promise((resolve) => {
+              const reader = new FileReader();
+              reader.onloadend = () => resolve(reader.result.split(',')[1]);
+              reader.readAsDataURL(file);
+          });
+      }
+      
+      try {
+          await fetch('/api/worker/submit', { 
+              method: 'POST', headers: {'Content-Type': 'application/json'}, 
+              body: JSON.stringify({
+                  task_id: id, 
+                  proof_text: txt, 
+                  proof_type: "Manual",
+                  proof_image_base64: base64Image,
+                  proof_image_mime: mimeType
+              }) 
+          }); 
+          alert("Proof submitted successfully! The user has been notified."); 
+          loadFeed(); 
+      } catch (e) {
+          alert("Failed to submit proof. Error: " + e.message);
+          btn.innerText = "Submit for Review"; btn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
