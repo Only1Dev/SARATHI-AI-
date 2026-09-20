@@ -1,5 +1,5 @@
 # ⚡ SARATHI AI 
-### Conversational AI & Human Task Routing Platform over WhatsApp/Telegram with Instant UPI Escrow
+### Conversational AI & Human Task Routing Platform over Telegram with Instant UPI Escrow
 
 ---
 
@@ -8,11 +8,11 @@
 Existing gig and freelance platforms (Fiverr, Upwork, Urban Company) force users into bulky forms, bidding wars, complex dashboards, and high platform commissions. 
 
 **Sarathi AI** introduces a conversational task routing paradigm:
-> *"Text or speak any task into WhatsApp / Telegram. AI answers free (₹0), or a real human worker executes it for ₹50–₹500 — held safely in UPI Escrow and paid out instantly upon your approval."*
+> *"Text or speak any task into  Telegram. AI answers free (₹0), or a real human worker executes it for ₹50–₹500 — held safely in UPI Escrow and paid out instantly upon your approval."*
 
 ```
                  ┌──────────────────────────────────────┐
-                 │ User sends text/voice note via WA/TG │
+                 │ User sends text/voice note via TG │
                  └──────────────────┬───────────────────┘
                                     │
                         [ AI Triage & Language Engine ]
@@ -45,11 +45,11 @@ Existing gig and freelance platforms (Fiverr, Upwork, Urban Company) force users
 ## 🌟 Key Features of the Prototype
 
 1. **Triple-Panel Hackathon Simulator**:
-   - **Pane 1 (Requester Phone UI)**: Realistic mobile frame with chat stream, simulated Hindi/English voice note button, live quote cards, and deliverable approval actions.
+   - **Pane 1 (Requester Phone UI)**: Realistic mobile frame with chat stream,live quote cards, and deliverable approval actions.
    - **Pane 2 (Worker Dispatch Board)**: Live feed of escrow-locked jobs where registered gig workers can claim tasks, submit proof, and track instant UPI balances.
    - **Pane 3 (AI Triage & Escrow Brain Inspector)**: Real-time telemetry inspector for judges showing intent classification, confidence scores, compute cost vs. human wage, and the escrow state machine.
-2. **Zero-Friction UPI Escrow**:
-   - Simulates UPI QR Codes and 1-tap pre-auth (PhonePe, Google Pay, Paytm). Money is held in virtual escrow until the user is satisfied.
+2. **Zero-Friction Escrow**:
+   - Simulates stripe gateway for balance addition in the wallet through credit card. Money is held in virtual escrow until the user is satisfied.
 3. **Works 100% Free Out of the Box**:
    - Built-in heuristic triage handles real Indian use cases (calling local stores in Koramangala, document translation, legal liability audits) without requiring any paid API keys.
 4. **Live AI Ready (Google Gemini Free Tier)**:
