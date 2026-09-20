@@ -59,10 +59,12 @@ def call_live_groq_triage(query: str, api_key: str):
 
 def call_ai_proof_verifier(prompt, proof_text, proof_type, image_base64=None, image_mime=None):
     sys_prompt = "You are an AI Proof Verification Auditor for Sarathi AI.\nCompare the User's Original Task against the Worker's Submitted Proof.\nIf the proof does not match the requested task, return a low confidence score and set is_verified to false.\nRespond strictly in valid JSON format:\n{\n  \"is_verified\": true,\n  \"confidence_score\": 98,\n  \"audit_summary\": \"1 sentence verdict on proof validity\"\n}"
-    _key = CONFIG.get("GEMINI_API_KEY")
+    
+    gemini_key = CONFIG.get("GEMINI_API_KEY")
     if not image_base64 or not gemini_key:
         return {"is_verified": True, "confidence_score": 90, "audit_summary": "Auto-verified via text."}
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={gemini_key}"
+        
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
     payload = {
         "contents": [{"parts": [
             {"text": sys_prompt + "\n\nUser Task: " + prompt + "\nProof: " + proof_text},
@@ -77,7 +79,7 @@ def call_ai_proof_verifier(prompt, proof_text, proof_type, image_base64=None, im
     except Exception: pass
     return {"is_verified": False, "confidence_score": 0, "audit_summary": "API Error"}
 
-# --- AUTH & DASHBOARD ROUTES (Kept from previous) ---
+# --- AUTH & DASHBOARD ROUTES ---
 @app.route('/api/auth/login', methods=['POST'])
 def auth_login():
     phone = request.json.get("phone_number")
@@ -119,7 +121,7 @@ def admin_dashboard():
 @app.route('/api/admin/approve_worker', methods=['POST'])
 def admin_approve_worker():
     supabase.table("workers").update({"status": "APPROVED"}).eq("id", request.json.get("worker_id")).execute()
-    return jsonify({"status": "success", "turnaround": task.get("turnaround_mins", 30)})
+    return jsonify({"status": "success"})
 
 @app.route('/api/worker/auth', methods=['POST'])
 def worker_auth():
@@ -173,6 +175,10 @@ def worker_ask():
     question = request.json.get("question", "")
     image_base64 = request.json.get("image_base64")
     
+    # --- STRIP BASE64 TAG ---
+    if image_base64 and "," in image_base64:
+        image_base64 = image_base64.split(",")[1]
+    
     task = supabase.table("tasks").select("*, users(telegram_chat_id), workers(name)").eq("id", task_id).execute().data[0]
     chat_id = task["users"]["telegram_chat_id"]
     msg = f"💬 *Message from {task['workers']['name']}:*\n\n{question}" if question else f"🖼 *Photo from {task['workers']['name']}*"
@@ -209,11 +215,17 @@ def handle_user_reply():
 @app.route('/api/worker/submit', methods=['POST'])
 def submit_work():
     data = request.json
+    
+    # --- STRIP BASE64 TAG ---
+    if data.get("proof_image_base64") and "," in data.get("proof_image_base64"):
+        data["proof_image_base64"] = data["proof_image_base64"].split(",")[1]
+        
     task = supabase.table("tasks").select("*, users(telegram_chat_id), workers(*)").eq("id", data.get("task_id")).execute().data[0]
     audit_res = call_ai_proof_verifier(task["query"], data.get("proof_text"), data.get("proof_type"), data.get("proof_image_base64"), data.get("proof_image_mime"))
     deliv = {"text": data.get("proof_text"), "proof_type": data.get("proof_type"), "has_image": bool(data.get("proof_image_base64")), "ai_verification": audit_res}
     supabase.table("tasks").update({"status": "DELIVERED", "deliverable": deliv}).eq("id", task["id"]).execute()
     chat_id = task.get("users", {}).get("telegram_chat_id")
+    
     if chat_id:
         msg = f"📦 *Deliverable Submitted!*\n\n• *Worker:* {task['workers']['name']}\n• *Proof:* {deliv['text']}\n• *AI Verdict:* {audit_res.get('audit_summary')}\n\nTap below to approve:"
         kb = {"inline_keyboard": [[{"text": f"⭐ Approve & Pay ₹{task['quote_inr']}", "callback_data": f"approve_{task['id']}"}]]}
