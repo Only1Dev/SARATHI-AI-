@@ -73,12 +73,19 @@ def call_ai_proof_verifier(prompt, proof_text, proof_type, image_base64=None, im
         "generationConfig": {"responseMimeType": "application/json", "temperature": 0.1}
     }
     try:
-        r = requests.post(url, json=payload, timeout=15)
+        r = requests.post(url, json=payload, timeout=30)
         if r.status_code == 200:
-            return json.loads(r.json()["candidates"][0]["content"]["parts"][0]["text"])
-    except Exception: pass
-    return {"is_verified": False, "confidence_score": 0, "audit_summary": "API Error"}
-
+            raw_text = r.json()["candidates"][0]["content"]["parts"][0]["text"]
+            # Strip invisible markdown that crashes Python
+            clean_text = raw_text.replace("```json", "").replace("```", "").strip()
+            return json.loads(clean_text)
+        else:
+            print("Gemini API Error:", r.status_code, r.text)
+    except Exception as e:
+        print("Gemini Code Error:", e)
+        
+    return {"is_verified": False, "confidence_score": 0, "audit_summary": "API Error - Check Render Logs"}
+    
 # --- AUTH & DASHBOARD ROUTES ---
 @app.route('/api/auth/login', methods=['POST'])
 def auth_login():
