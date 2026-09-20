@@ -29,7 +29,7 @@ stripe.api_key = os.getenv("STRIPE_SECRET_KEY")
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 AWAITING_REPLY = {}
-ADMIN_PHONE = os.getenv("ADMIN_PHONE", "+917015960679")
+ADMIN_PHONE = os.getenv("ADMIN_PHONE", "+917015******")
 
 @app.route('/')
 def serve_index():
