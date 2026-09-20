@@ -59,10 +59,10 @@ def call_live_groq_triage(query: str, api_key: str):
 
 def call_ai_proof_verifier(prompt, proof_text, proof_type, image_base64=None, image_mime=None):
     sys_prompt = "You are an AI Proof Verification Auditor for Sarathi AI.\nCompare the User's Original Task against the Worker's Submitted Proof.\nIf the proof does not match the requested task, return a low confidence score and set is_verified to false.\nRespond strictly in valid JSON format:\n{\n  \"is_verified\": true,\n  \"confidence_score\": 98,\n  \"audit_summary\": \"1 sentence verdict on proof validity\"\n}"
-    gemini_key = CONFIG.get("GEMINI_API_KEY")
+    _key = CONFIG.get("GEMINI_API_KEY")
     if not image_base64 or not gemini_key:
         return {"is_verified": True, "confidence_score": 90, "audit_summary": "Auto-verified via text."}
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
     payload = {
         "contents": [{"parts": [
             {"text": sys_prompt + "\n\nUser Task: " + prompt + "\nProof: " + proof_text},
