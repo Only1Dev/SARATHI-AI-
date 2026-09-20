@@ -1,6 +1,5 @@
-# ⚡ SARATHI AI (Cascade India)
+# ⚡ SARATHI AI 
 ### Conversational AI & Human Task Routing Platform over WhatsApp/Telegram with Instant UPI Escrow
-> **Built for Smart India Hackathon (SIH) Prototype**
 
 ---
 
@@ -87,19 +86,3 @@ python telegram_bot.py
 Now, message your bot on Telegram from your phone and watch live tasks appear across the 3-panel dashboard!
 
 ---
-
-## 🏆 Smart India Hackathon (SIH) Judging Demo Script
-
-1. **Demo Step 1 (AI Tier ₹0)**:
-   - Type: *"Draft a polite email to my professor requesting leave for 2 days"*.
-   - Point out that Sarathi AI detects pure digital/informational requests and answers instantly at ₹0 without charging the user.
-2. **Demo Step 2 (Gig Worker Tier + UPI Escrow)**:
-   - Type: *"Call Om Stationary in Koramangala and check A3 drafting board stock and price"*.
-   - Point out how the AI generates a quote card (`₹120 · ~15 mins`).
-   - Click **Confirm & Lock Escrow** $\to$ Show the simulated UPI QR Code pre-auth.
-   - Show Pane 2: The job appears on Aarav's dispatch board.
-   - Click **Claim Task** and **Submit Deliverable**.
-   - Show Pane 1: The deliverable pops up in the user's chat. Click **Approve & Release ₹120** to trigger instant UPI payout to the worker.
-3. **Demo Step 3 (Expert Tier)**:
-   - Type: *"Review this software vendor agreement for legal liability under Indian Contract Act"*.
-   - Show that Sarathi AI automatically escalates to Tier 3 (Priya Nair, CA/Legal specialist) with an appropriate expert quote.
