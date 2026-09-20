@@ -62,7 +62,7 @@ def call_ai_proof_verifier(prompt, proof_text, proof_type, image_base64=None, im
     _key = CONFIG.get("GEMINI_API_KEY")
     if not image_base64 or not gemini_key:
         return {"is_verified": True, "confidence_score": 90, "audit_summary": "Auto-verified via text."}
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={gemini_key}"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={gemini_key}"
     payload = {
         "contents": [{"parts": [
             {"text": sys_prompt + "\n\nUser Task: " + prompt + "\nProof: " + proof_text},
