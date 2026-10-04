@@ -1,0 +1,23 @@
+GID- Get It Done - Project Overview
+
+GID- Get It Done is a gig-economy platform designed to route tasks between automated AI solvers and human workers based on task complexity. 
+
+Core Features:
+1. Automated Task Triage: Uses Groq's LLM routing to determine if a task can be solved by AI immediately (Cost: 0) or requires a human gig worker/expert.
+2. Worker Network (Telegram): Approved gig workers accept tasks, ask questions, and submit proofs of work via a Telegram Bot interface.
+3. AI Proof Verification: Uses Google Gemini Vision (3.6 Flash) to automatically audit submitted proofs (images/text) to ensure they match the original user request before releasing escrow.
+4. Secure Escrow & Payments: Integrated with Stripe for wallet top-ups and Supabase for real-time transaction handling and user management.
+
+Tech Stack:
+- Backend: Python, Flask, Gunicorn
+- Database & Auth: Supabase, Firebase Admin SDK
+- AI Integration: Groq (Llama-based triage), Google Gemini (Multimodal Verification)
+- Bots: Telegram Bot API
+- Frontend: HTML/JS
+
+Setup Instructions:
+1. Create a `.env` file based on `.env.example`.
+2. Install dependencies using `pip install -r requirements.txt`.
+3. Start the backend: `python server.py`
+4. Start the bot: `python telegram_bot.py`
+(For production via Render, use: `python telegram_bot.py & gunicorn --timeout 120 server:app`)
