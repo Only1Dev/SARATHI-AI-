@@ -114,7 +114,7 @@
         <div style="display: flex; align-items: center; gap: 0.8rem;"><i data-lucide="lock" style="color: #f59e0b; width: 18px;"></i><span style="font-size: 0.95rem; color: #94a3b8;">In Escrow</span></div>
         <div style="font-weight: 600; font-size: 1.1rem; color: #f59e0b;">₹<span id="escrow-balance">0</span></div>
       </div>
-      <button class="btn-glow" style="width: 100%;" onclick="addFunds()"><i data-lucide="plus" style="width: 20px;"></i> Add Funds via Stripe</button>
+      <button class="btn-glow" style="width: 100%;" onclick="addFunds()"><i data-lucide="plus" style="width: 20px;"></i> Add Funds via Razorpay</button>
     </div>
 
     <!-- Tasks Card -->
@@ -124,6 +124,7 @@
     </div>
   </main>
 
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
   <script>
     lucide.createIcons();
     const phone = localStorage.getItem("phone_number");
@@ -150,14 +151,75 @@
     }
 
     async function addFunds() {
-      const amt = prompt("Enter amount to add via Stripe (INR):", "500");
+      const amt = prompt("Enter amount to add via Razorpay (INR):", "500");
       if(amt && !isNaN(amt)) {
         const btn = document.querySelector('button[onclick="addFunds()"]');
-        const originalText = btn.innerHTML; btn.innerHTML = "Redirecting..."; btn.disabled = true;
+        const originalText = btn.innerHTML; btn.innerHTML = "Opening Gateway..."; btn.disabled = true;
         try {
-            const res = await fetch('/api/stripe/create-checkout-session', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({phone_number: phone, amount: amt}) });
+            const res = await fetch('/api/razorpay/create-order', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({phone_number: phone, amount: amt}) });
             const data = await res.json();
-            if(data.url) window.location.href = data.url;
+            if(data.status === "success") {
+                var options = {
+                    "key": data.key,
+                    "amount": data.amount,
+                    "currency": "INR",
+                    "name": "GID- Get It Done",
+                    "description": "Wallet Top-Up",
+                    "order_id": data.order_id,
+                    "config": {
+                        "display": {
+                            "blocks": {
+                                "upi": {
+                                    "name": "Pay via UPI",
+                                    "instruments": [
+                                        {"method": "upi"}
+                                    ]
+                                }
+                            },
+                            "sequence": ["block.upi"],
+                            "preferences": {"show_default_blocks": true}
+                        }
+                    },
+                    "handler": async function (response){
+                        btn.innerHTML = "Verifying...";
+                        const vRes = await fetch('/api/razorpay/verify', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/json'},
+                            body: JSON.stringify({
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_signature: response.razorpay_signature,
+                                phone: phone,
+                                amount: amt
+                            })
+                        });
+                        const vData = await vRes.json();
+                        if(vData.status === "success") {
+                            alert("Payment Successful!");
+                            loadDashboard();
+                        } else {
+                            alert("Payment Verification Failed!");
+                        }
+                        btn.innerHTML = originalText; btn.disabled = false;
+                    },
+                    "prefill": {
+                        "contact": phone
+                    },
+                    "theme": {
+                        "color": "#3b82f6"
+                    },
+                    "modal": {
+                        "ondismiss": function(){
+                            btn.innerHTML = originalText; btn.disabled = false;
+                        }
+                    }
+                };
+                var rzp1 = new Razorpay(options);
+                rzp1.open();
+            } else {
+                alert("Error creating order: " + data.message);
+                btn.innerHTML = originalText; btn.disabled = false;
+            }
         } catch (e) { btn.innerHTML = originalText; btn.disabled = false; }
       }
     }

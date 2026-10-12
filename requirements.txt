@@ -3,7 +3,10 @@ requests>=2.31.0
 python-dotenv>=1.0.0
 supabase
 groq
-stripe
+razorpay
 gunicorn
 flask-cors
 firebase-admin
+google-api-python-client
+google-auth-httplib2
+google-auth-oauthlib

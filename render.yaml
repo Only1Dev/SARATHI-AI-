@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: gid-get-it-done
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: bash start.sh
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: RUN_BOT_IN_SERVER
+        value: "false"

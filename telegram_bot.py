@@ -7,8 +7,8 @@ import re
 load_dotenv()
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN", "")
-# Use environment variable in production, fallback to localhost for development
-BACKEND_URL = os.getenv("BACKEND_URL", "http://127.0.0.1:5000")
+PORT = os.getenv("PORT", "5000")
+BACKEND_URL = os.getenv("BACKEND_URL", f"http://127.0.0.1:{PORT}")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 AWAITING_NEGOTIATION = {}
 
